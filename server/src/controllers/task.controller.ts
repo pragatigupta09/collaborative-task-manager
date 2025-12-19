@@ -6,6 +6,10 @@ import Notification from "../models/Notification";
 
 export const createTask = async (req: AuthRequest, res: Response) => {
   try {
+    if (!req.body.boardId || !req.body.title) {
+      return res.status(400).json({ message: "boardId and title are required" });
+    }
+
     const taskData = {
       ...req.body,
       creatorId: req.user!.id,
@@ -23,6 +27,8 @@ export const createTask = async (req: AuthRequest, res: Response) => {
         priority: task.priority,
         status: task.status,
       });
+
+      console.log("Emitted task-assigned to:", req.body.assignedToId);
 
       try {
         const notification = await Notification.create({
@@ -69,24 +75,30 @@ export const updateTask = async (req: AuthRequest, res: Response) => {
       creatorId: req.user!.id,
     };
 
-    const task = await TaskService.createTask(taskData);
+    //Use updateTask, not createTask
+    const task = await TaskService.updateTask(req.params.id, taskData);
 
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
 
-  const io = getIO();
+    const io = getIO();
 
-  // Live update to board (status, priority, assignee all included)
-  io.to(task.boardId.toString()).emit("task-updated", task);
+    // Live update to board
+    io.to(task.boardId.toString()).emit("task-updated", task);
 
-  // Assignment notification
-  if (req.body.assignedToId) {
-  io.to(req.body.assignedToId.toString()).emit("task-assigned", {
-    taskId: task._id,
-    title: task.title,
-    priority: task.priority,
-    status: task.status,
-  });
+    // Assignment notification
+    if (req.body.assignedToId) {
+      io.to(req.body.assignedToId.toString()).emit("task-assigned", {
+        taskId: task._id,
+        title: task.title,
+        priority: task.priority,
+        status: task.status,
+      });
 
-  try {
+      console.log("Emitted task-assigned to:", req.body.assignedToId);
+
+      try {
         const notification = await Notification.create({
           userId: req.body.assignedToId,
           message: `You have been assigned task: ${task.title}`,
@@ -98,12 +110,54 @@ export const updateTask = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    res.status(201).json(task);
+    res.json(task);
   } catch (error) {
-    console.error("Error creating task:", error);
-    res.status(500).json({ message: "Failed to create task" });
+    console.error("Error updating task:", error);
+    res.status(500).json({ message: "Failed to update task" });
   }
 };
+// export const updateTask = async (req: AuthRequest, res: Response) => {
+//   try {
+//     const taskData = {
+//       ...req.body,
+//       creatorId: req.user!.id,
+//     };
+
+//     const task = await TaskService.createTask(taskData);
+
+
+//   const io = getIO();
+
+//   // Live update to board (status, priority, assignee all included)
+//   io.to(task.boardId.toString()).emit("task-updated", task);
+
+//   // Assignment notification
+//   if (req.body.assignedToId) {
+//   io.to(req.body.assignedToId.toString()).emit("task-assigned", {
+//     taskId: task._id,
+//     title: task.title,
+//     priority: task.priority,
+//     status: task.status,
+//   });
+
+//   try {
+//         const notification = await Notification.create({
+//           userId: req.body.assignedToId,
+//           message: `You have been assigned task: ${task.title}`,
+//           taskId: task._id,
+//         });
+//         console.log(" Notification saved:", notification._id);
+//       } catch (err) {
+//         console.error(" Failed to save notification:", err);
+//       }
+//     }
+
+//     res.status(201).json(task);
+//   } catch (error) {
+//     console.error("Error creating task:", error);
+//     res.status(500).json({ message: "Failed to create task" });
+//   }
+// };
 
 
 export const getTasksByBoard = async (req: AuthRequest, res: Response) => {

@@ -1,3 +1,4 @@
+import path from "path";
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
@@ -17,7 +18,7 @@ const app = express();
 
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: ["http://localhost:3000"], 
     credentials: true,
   })
 );
@@ -25,10 +26,17 @@ app.use(express.json());
 app.use(morgan("dev"));
 app.use(errorHandler);
 
+// API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/boards", boardRoutes);
 app.use("/api/tasks", taskRoutes);
+
+// ✅ Serve frontend build
+app.use(express.static(path.join(__dirname, "public")));
+app.get("*", (_req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
 
 const server = http.createServer(app);
 

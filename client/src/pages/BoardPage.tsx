@@ -12,12 +12,11 @@ export default function BoardPage() {
   const queryClient = useQueryClient();
   const userId = localStorage.getItem("userId"); 
 
-  const { data: tasks, isLoading, refetch } = useQuery({
-    queryKey: ["tasks", id],
-    enabled: !!id,
-    queryFn: async () =>
-      (await api.get(`/tasks/board/${id}`)).data,
-  });
+  const { data: tasks, isLoading } = useQuery({
+  queryKey: ["tasks", id],
+  enabled: !!id,
+  queryFn: async () => (await api.get(`/tasks/board/${id}`)).data,
+});
 
   const createTaskMutation = useMutation({
     mutationFn: (data: { title: string; status: string, priority: string, assignedToId?: string }) =>
@@ -28,35 +27,35 @@ export default function BoardPage() {
   });
 
   useEffect(() => {
-    // if (!id) return;
-
-    const handleAssigned = (data: any) => {
-    toast.dismiss(); // ✅ clear previous toasts
+  const handleAssigned = (data: any) => {
     toast.success(`You’ve been assigned: ${data.title} (Priority: ${data.priority}, Status: ${data.status})`);
-    refetch();
+    queryClient.invalidateQueries({queryKey: ["notifications"]});
   };
 
-    socket.emit("join-board", id);
-    socket.emit("join-user", userId);
+  const handleUpdated = (data: any) => {
+    toast.info(`Task "${data.title}" was updated (Priority: ${data.priority}, Status: ${data.status})`);
+    queryClient.invalidateQueries({queryKey: ["tasks", id]});
+  };
 
-    socket.on("task-created", refetch);
-    socket.on("task-updated", (data) => {
-      toast.info(`Task "${data.title}" was updated (Priority: ${data.priority}, Status: ${data.status})`);
-      refetch();
-    });
+  socket.emit("join-board", id);
+  socket.emit("join-user", userId?.toString());
 
-    socket.on("task-deleted", refetch);
+  socket.on("task-created", () => queryClient.invalidateQueries({queryKey: ["tasks", id]}));
+  socket.on("task-updated", handleUpdated);
+  socket.on("task-deleted", () => queryClient.invalidateQueries({queryKey: ["tasks", id]}));
+  // socket.on("task-assigned", handleAssigned);
+  socket.on("task-assigned", (data) => {
+  console.log("Received task-assigned:", data);
+  toast.success(`You’ve been assigned: ${data.title}`);
+});
 
-    socket.on("task-assigned", handleAssigned);
-
-    return () => {
-      socket.off("task-created", refetch);
-      socket.off("task-updated", refetch);
-      socket.off("task-deleted", refetch);
-      socket.off("task-assigned", handleAssigned);
-
-    };
-  }, [id, refetch, userId]);
+  return () => {
+    socket.off("task-created");
+    socket.off("task-updated", handleUpdated);
+    socket.off("task-deleted");
+    socket.off("task-assigned", handleAssigned);
+  };
+}, [id, userId, queryClient]);
 
   if (isLoading) return <p>Loading tasks...</p>;
 
