@@ -9,6 +9,7 @@ import taskImage from "../assets/images/tasks.svg";
 export default function BoardPage() {
   const { id } = useParams();
   const queryClient = useQueryClient();
+  const userId = localStorage.getItem("userId"); 
 
   const { data: tasks, isLoading, refetch } = useQuery({
     queryKey: ["tasks", id],
@@ -18,7 +19,7 @@ export default function BoardPage() {
   });
 
   const createTaskMutation = useMutation({
-    mutationFn: (data: { title: string; status: string }) =>
+    mutationFn: (data: { title: string; status: string, priority: string, assignedToId?: string }) =>
       api.post("/tasks", { ...data, boardId: id }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks", id] });
@@ -26,18 +27,28 @@ export default function BoardPage() {
   });
 
   useEffect(() => {
-    if (!id) return;
+    // if (!id) return;
 
     socket.emit("join-board", id);
+    socket.emit("join-user", userId);
 
     socket.on("task-created", refetch);
     socket.on("task-updated", refetch);
+    socket.on("task-deleted", refetch);
+
+    socket.on("task-assigned", (data) => {
+      alert(`You have been assigned a task: ${data.title} (Priority: ${data.priority}, Status: ${data.status})`);
+      refetch();
+    });
 
     return () => {
       socket.off("task-created", refetch);
       socket.off("task-updated", refetch);
+      socket.off("task-deleted", refetch);
+      socket.off("task-assigned");
+
     };
-  }, [id, refetch]);
+  }, [id, refetch, userId]);
 
   if (isLoading) return <p>Loading tasks...</p>;
 
@@ -51,8 +62,12 @@ export default function BoardPage() {
           if (!title) return;
           const status =
             prompt("Status: todo | in-progress | done") || "todo";
-          createTaskMutation.mutate({ title, status });
-        }}
+          const priority =
+            prompt("Priority: low | medium | high | urgent") || "medium";
+          const assignedToId = prompt("Assigned to user ID (optional):") || undefined;
+    createTaskMutation.mutate({ title, status, priority, assignedToId });
+  }}
+
         className="mb-4 bg-green-600 text-white px-4 py-2 rounded"
       >
         + Add Task

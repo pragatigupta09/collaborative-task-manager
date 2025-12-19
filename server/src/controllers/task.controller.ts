@@ -2,6 +2,7 @@ import { Response } from "express";
 import { TaskService } from "../services/task.service";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { getIO } from "../config/socket";
+import Notification from "../models/Notification";
 
 export const createTask = async (req: AuthRequest, res: Response) => {
   try {
@@ -14,6 +15,13 @@ export const createTask = async (req: AuthRequest, res: Response) => {
 
     const io = getIO();
     io.to(task.boardId.toString()).emit("task-created", task); // Optional live update
+
+    if (req.body.assignedToId) {
+      io.to(req.body.assignedToId.toString()).emit("task-assigned", {
+        taskId: task._id,
+        title: task.title,
+      });
+    }
 
     res.status(201).json(task);
   } catch (error) {
@@ -49,16 +57,24 @@ export const updateTask = async (req: AuthRequest, res: Response) => {
 
   const io = getIO();
 
-  // Live update to board
+  // Live update to board (status, priority, assignee all included)
   io.to(task.boardId.toString()).emit("task-updated", task);
 
   // Assignment notification
   if (req.body.assignedToId) {
-    io.to(req.body.assignedToId.toString()).emit("task-assigned", {
-      taskId: task._id,
-      title: task.title,
-    });
-  }
+  io.to(req.body.assignedToId.toString()).emit("task-assigned", {
+    taskId: task._id,
+    title: task.title,
+    priority: task.priority,
+    status: task.status,
+  });
+
+  await Notification.create({
+    userId: req.body.assignedToId,
+    message: `You have been assigned task: ${task.title}`,
+    taskId: task._id,
+  });
+}
 
   return res.json(task);
 };

@@ -9,6 +9,8 @@ import { initSocket } from "./config/socket";
 import authRoutes from "./routes/auth.routes";
 import boardRoutes from "./routes/board.routes";
 import taskRoutes from "./routes/task.routes";
+import notificationRoutes from "./routes/notification.routes";
+
 import { errorHandler } from "./middleware/error.middleware";
 
 const app = express();
@@ -26,6 +28,7 @@ app.use(errorHandler);
 app.use("/api/auth", authRoutes);
 app.use("/api/boards", boardRoutes);
 app.use("/api/tasks", taskRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 const server = http.createServer(app);
 

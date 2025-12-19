@@ -17,6 +17,11 @@ export default function Sidebar() {
         <Link to="/tasks" className="block hover:text-blue-400">
           Tasks
         </Link>
+
+        <Link to="/notifications" className="block hover:text-blue-400">
+          Notifications
+        </Link>
+
       </nav>
     </aside>
   );

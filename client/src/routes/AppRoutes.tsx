@@ -6,6 +6,7 @@ import Dashboard from "../pages/Dashboard";
 import Boards from "../pages/Boards";
 import BoardPage from "../pages/BoardPage";
 import TasksPage from "../pages/TasksPage";
+import NotificationsPage from "../pages/NotificationsPage";
 import Login from "../features/auth/Login";
 import Register from "../features/auth/Register";
 import NotFound from "../pages/NotFound";
@@ -19,6 +20,7 @@ export default function AppRoutes() {
           <Route path="/boards" element={<Boards />} />
           <Route path="/boards/:id" element={<BoardPage />} />
           <Route path="/tasks" element={<TasksPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
         </Route>
       </Route>
 
