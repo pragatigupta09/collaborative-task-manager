@@ -1,9 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
-import api from "../lib/axios";
-import BoardCard from "../features/boards/BoardCard";
+import { useQuery } from "@tanstack/react-query"; 
+import api from "../lib/axios"; 
+import BoardCard from "../features/boards/BoardCard"; 
+import { queryClient } from "../lib/react-query";
 
 export default function Boards() {
-  const { data:boards, isLoading } = useQuery({
+  const { data: boards, isLoading } = useQuery({
     queryKey: ["boards"],
     queryFn: async () => (await api.get("/boards")).data,
   });
@@ -20,5 +21,5 @@ export default function Boards() {
         ))}
       </div>
     </div>
-    );  
+  );
 }

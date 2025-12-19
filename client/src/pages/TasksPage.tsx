@@ -5,7 +5,7 @@ import TaskCard from "../features/tasks/TaskCard";
 export default function TasksPage() {
   const { data: tasks, isLoading } = useQuery({
     queryKey: ["tasks"],
-    queryFn: async () => (await api.get("/tasks")).data,
+    queryFn: async () => (await api.get("/tasks").then(res => res.data)),
   });
 
   if (isLoading) return <p>Loading...</p>;

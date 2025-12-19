@@ -3,6 +3,7 @@ import { login, register } from "./auth.api";
 import { useAuthStore } from "../../store/auth.store";
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
+import { joinUserRoom } from "../../lib/socket";
 
 type Props = {
   mode: "login" | "register";
@@ -19,20 +20,40 @@ export default function AuthForm({ mode, onSuccess }: Props) {
   });
 
   const submit = async () => {
-    try {
-      if (mode === "login") {
-        const res = await login(form);
-        setToken(res.data.token); // ✅ only login stores token
-      } else {
-        await register(form); // ✅ register only creates user
-      }
+  try {
+    if (mode === "login") {
+      const res = await login(form);
 
-      onSuccess?.(); // ✅ redirect handled by parent
-    } catch (err) {
-      console.error("Auth failed", err);
-      alert("Authentication failed");
+      setToken(res.data.token);
+
+      // ✅ JOIN SOCKET USER ROOM HERE
+      joinUserRoom(res.data.user._id);
+    } else {
+      await register(form);
     }
-  };
+
+    onSuccess?.();
+  } catch (err) {
+    console.error("Auth failed", err);
+    alert("Authentication failed");
+  }
+};
+
+  // const submit = async () => {
+  //   try {
+  //     if (mode === "login") {
+  //       const res = await login(form);
+  //       setToken(res.data.token); // ✅ only login stores token
+  //     } else {
+  //       await register(form); // ✅ register only creates user
+  //     }
+
+  //     onSuccess?.(); // ✅ redirect handled by parent
+  //   } catch (err) {
+  //     console.error("Auth failed", err);
+  //     alert("Authentication failed");
+  //   }
+  // };
 
   return (
     <div className="max-w-sm mx-auto space-y-4">
