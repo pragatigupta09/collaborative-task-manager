@@ -6,7 +6,6 @@ export default function NotificationsPage() {
     queryKey: ["notifications"],
     queryFn: async () => (await api.get("/notifications")).data,
   });
-
   if (isLoading) return <p className="p-6">Loading notifications...</p>;
 
   if (!notifications || notifications.length === 0) {

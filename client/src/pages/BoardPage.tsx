@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { socket } from "../lib/socket";
 import TaskCard from "../features/tasks/TaskCard";
 import taskImage from "../assets/images/tasks.svg";
+import { toast } from "react-toastify";
 
 export default function BoardPage() {
   const { id } = useParams();
@@ -29,23 +30,30 @@ export default function BoardPage() {
   useEffect(() => {
     // if (!id) return;
 
+    const handleAssigned = (data: any) => {
+    toast.dismiss(); // ✅ clear previous toasts
+    toast.success(`You’ve been assigned: ${data.title} (Priority: ${data.priority}, Status: ${data.status})`);
+    refetch();
+  };
+
     socket.emit("join-board", id);
     socket.emit("join-user", userId);
 
     socket.on("task-created", refetch);
-    socket.on("task-updated", refetch);
-    socket.on("task-deleted", refetch);
-
-    socket.on("task-assigned", (data) => {
-      alert(`You have been assigned a task: ${data.title} (Priority: ${data.priority}, Status: ${data.status})`);
+    socket.on("task-updated", (data) => {
+      toast.info(`Task "${data.title}" was updated (Priority: ${data.priority}, Status: ${data.status})`);
       refetch();
     });
+
+    socket.on("task-deleted", refetch);
+
+    socket.on("task-assigned", handleAssigned);
 
     return () => {
       socket.off("task-created", refetch);
       socket.off("task-updated", refetch);
       socket.off("task-deleted", refetch);
-      socket.off("task-assigned");
+      socket.off("task-assigned", handleAssigned);
 
     };
   }, [id, refetch, userId]);

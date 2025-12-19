@@ -28,6 +28,7 @@ export default function AppRoutes() {
       <Route path="/register" element={<Register />} />
 
       <Route path="*" element={<NotFound />} />
+      
     </Routes>
   );
 }

@@ -26,9 +26,9 @@ app.use(morgan("dev"));
 app.use(errorHandler);
 
 app.use("/api/auth", authRoutes);
+app.use("/api/notifications", notificationRoutes);
 app.use("/api/boards", boardRoutes);
 app.use("/api/tasks", taskRoutes);
-app.use("/api/notifications", notificationRoutes);
 
 const server = http.createServer(app);
 

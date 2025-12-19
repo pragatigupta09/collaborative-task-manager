@@ -8,27 +8,41 @@ export const createTask = async (req: AuthRequest, res: Response) => {
   try {
     const taskData = {
       ...req.body,
-      creatorId: req.user!.id,   
+      creatorId: req.user!.id,
     };
 
     const task = await TaskService.createTask(taskData);
 
     const io = getIO();
-    io.to(task.boardId.toString()).emit("task-created", task); // Optional live update
+    io.to(task.boardId.toString()).emit("task-created", task);
 
     if (req.body.assignedToId) {
       io.to(req.body.assignedToId.toString()).emit("task-assigned", {
         taskId: task._id,
         title: task.title,
+        priority: task.priority,
+        status: task.status,
       });
-    }
 
+      try {
+        const notification = await Notification.create({
+          userId: req.body.assignedToId,
+          message: `You have been assigned task: ${task.title}`,
+          taskId: task._id,
+        });
+        console.log(" Notification saved:", notification._id);
+      } catch (err) {
+        console.error(" Failed to save notification:", err);
+      }
+    }
     res.status(201).json(task);
   } catch (error) {
     console.error("Error creating task:", error);
     res.status(500).json({ message: "Failed to create task" });
   }
 };
+
+
 
 export const deleteTask = async (req: AuthRequest, res: Response) => {
   try {
@@ -49,11 +63,14 @@ export const deleteTask = async (req: AuthRequest, res: Response) => {
 };
 
 export const updateTask = async (req: AuthRequest, res: Response) => {
-  const task = await TaskService.updateTask(req.params.id, req.body);
+  try {
+    const taskData = {
+      ...req.body,
+      creatorId: req.user!.id,
+    };
 
-  if (!task) {
-    return res.status(404).json({ message: "Task not found" });
-  }
+    const task = await TaskService.createTask(taskData);
+
 
   const io = getIO();
 
@@ -69,15 +86,25 @@ export const updateTask = async (req: AuthRequest, res: Response) => {
     status: task.status,
   });
 
-  await Notification.create({
-    userId: req.body.assignedToId,
-    message: `You have been assigned task: ${task.title}`,
-    taskId: task._id,
-  });
-}
+  try {
+        const notification = await Notification.create({
+          userId: req.body.assignedToId,
+          message: `You have been assigned task: ${task.title}`,
+          taskId: task._id,
+        });
+        console.log(" Notification saved:", notification._id);
+      } catch (err) {
+        console.error(" Failed to save notification:", err);
+      }
+    }
 
-  return res.json(task);
+    res.status(201).json(task);
+  } catch (error) {
+    console.error("Error creating task:", error);
+    res.status(500).json({ message: "Failed to create task" });
+  }
 };
+
 
 export const getTasksByBoard = async (req: AuthRequest, res: Response) => {
   const tasks = await TaskService.getTasksByBoard(
