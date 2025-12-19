@@ -32,7 +32,6 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/boards", boardRoutes);
 app.use("/api/tasks", taskRoutes);
 
-// ✅ Serve frontend build
 app.use(express.static(path.join(__dirname, "public")));
 app.get("*", (_req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
